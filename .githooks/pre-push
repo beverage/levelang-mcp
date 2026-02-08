@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Git pre-push hook for Levelang MCP Server
+# Runs linting, format checking, and tests before allowing a push
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+print_status() {
+    echo -e "${BLUE}[PRE-PUSH]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+# Check if uv is available
+if ! command -v uv &> /dev/null; then
+    print_error "uv not found. Please install uv: https://docs.astral.sh/uv/"
+    exit 1
+fi
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+print_status "Checking branch: $current_branch"
+
+set -e
+
+# Lint check (read-only)
+print_status "Running code linting..."
+if uv run ruff check src/ tests/; then
+    print_success "Linting passed"
+else
+    print_error "Linting failed. Please fix the issues before pushing."
+    echo ""
+    echo "  Run 'uv run ruff check --fix src/ tests/' to auto-fix"
+    exit 1
+fi
+
+# Format check (read-only)
+print_status "Checking code formatting..."
+if uv run ruff format --check src/ tests/; then
+    print_success "Code formatting is correct"
+else
+    print_error "Code formatting issues found."
+    echo ""
+    echo "  Run 'uv run ruff format src/ tests/' to auto-format"
+    exit 1
+fi
+
+# Tests
+print_status "Running test suite..."
+if uv run pytest tests/ -v; then
+    print_success "All tests passed"
+else
+    print_error "Tests failed. Please fix issues before pushing."
+    echo ""
+    echo "  Run 'uv run pytest tests/ -v' for detailed output"
+    exit 1
+fi
+
+echo ""
+print_success "All pre-push checks passed!"
+print_status "Pushing to remote..."
+echo ""
+
+exit 0
