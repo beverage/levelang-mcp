@@ -21,10 +21,17 @@ BASE_URL = "http://testserver/api/v1"
 
 
 @pytest.fixture
-def client():
-    """Create a LevelangClient pointed at the test server."""
+def client(monkeypatch: pytest.MonkeyPatch):
+    """Create a LevelangClient with no API key (isolated from .env)."""
+    monkeypatch.delenv("LEVELANG_API_KEY", raising=False)
+    from levelang_mcp.config import reset_settings
+
+    reset_settings()
+
     c = LevelangClient()
     yield c
+
+    reset_settings()
 
 
 class TestTranslate:

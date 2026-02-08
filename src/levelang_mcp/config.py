@@ -6,6 +6,25 @@ import os
 
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+
+# Load .env once at import time.  Existing environment variables take
+# precedence over values defined in .env (the python-dotenv default).
+load_dotenv()
+
+
+def _parse_api_keys(raw: str | None) -> frozenset[str]:
+    """Parse a comma-separated list of API keys into a frozenset.
+
+    Strips whitespace from each key and discards empty strings.
+    Returns an empty frozenset when *raw* is ``None`` or blank,
+    which signals that auth is disabled.
+    """
+    if not raw:
+        return frozenset()
+    return frozenset(k for k in (k.strip() for k in raw.split(",")) if k)
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -15,6 +34,7 @@ class Settings:
     api_key: str | None
     mcp_transport: str
     mcp_port: int
+    mcp_api_keys: frozenset[str]
 
 
 _settings: Settings | None = None
@@ -33,7 +53,8 @@ def get_settings() -> Settings:
         ),
         api_key=os.environ.get("LEVELANG_API_KEY"),
         mcp_transport=os.environ.get("MCP_TRANSPORT", "stdio"),
-        mcp_port=int(os.environ.get("MCP_PORT", "8080")),
+        mcp_port=int(os.environ.get("MCP_PORT", "8463")),
+        mcp_api_keys=_parse_api_keys(os.environ.get("MCP_API_KEYS")),
     )
     return _settings
 

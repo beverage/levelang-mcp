@@ -21,3 +21,5 @@ def _set_default_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LEVELANG_API_BASE_URL", "http://testserver/api/v1")
     # No LEVELANG_API_KEY by default (matches local-dev experience)
     monkeypatch.delenv("LEVELANG_API_KEY", raising=False)
+    # No MCP_API_KEYS by default (auth disabled in tests unless explicitly set)
+    monkeypatch.delenv("MCP_API_KEYS", raising=False)

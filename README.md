@@ -74,9 +74,14 @@ All configuration is through environment variables, set in the `env` block of yo
 | `LEVELANG_API_BASE_URL` | No | `http://localhost:8000/api/v1` | Levelang backend URL |
 | `LEVELANG_API_KEY` | Depends | — | Service key (`sk_xxx`) for backend auth |
 | `MCP_TRANSPORT` | No | `stdio` | Transport: `stdio` or `streamable-http` |
-| `MCP_PORT` | No | `8080` | Port when using HTTP transport |
+| `MCP_PORT` | No | `8463` | Port when using HTTP transport |
+| `MCP_API_KEYS` | No | — | Comma-separated valid API keys for HTTP auth |
 
 `LEVELANG_API_KEY` is required when connecting to a remote backend (staging/production). It may be omitted for local development if the backend has auth disabled.
+
+`MCP_API_KEYS` controls client authentication for the HTTP transport. When set, clients must send `Authorization: Bearer <key>` with a key from this list. When empty or unset, auth is disabled (open access). This has no effect on stdio transport.
+
+> **Note:** This is a simple static-key scheme suited to small-scale and internal use. For higher-scale needs (many users, per-key revocation, usage tracking), swap in database-backed keys or an auth provider — the middleware pattern and client config remain the same.
 
 **Local development** (no auth):
 ```json
@@ -90,6 +95,40 @@ All configuration is through environment variables, set in the `env` block of yo
   "LEVELANG_API_KEY": ""
 }
 ```
+
+### Remote HTTP Connection
+
+When the MCP server is running in `streamable-http` mode (locally or deployed), connect via URL instead of spawning a subprocess.
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "levelang": {
+      "url": "http://localhost:8463/mcp",
+      "headers": {
+        "Authorization": "Bearer your-api-key"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "levelang": {
+      "url": "http://localhost:8463/mcp",
+      "headers": {
+        "Authorization": "Bearer your-api-key"
+      }
+    }
+  }
+}
+```
+
+Omit the `headers` block if `MCP_API_KEYS` is not set on the server (auth disabled).
 
 ## Development
 
@@ -122,11 +161,13 @@ npx @modelcontextprotocol/inspector uv run --directory /path/to/levelang-mcp pyt
 src/levelang_mcp/
 ├── __main__.py       # Entrypoint (python -m levelang_mcp)
 ├── server.py         # MCP tools and resources
+├── auth.py           # API-key auth middleware for HTTP transport
 ├── client.py         # Async HTTP client for the Levelang API
 ├── config.py         # Environment variable loading
 └── formatting.py     # API response → human-readable text
 
 tests/
+├── test_auth.py      # Auth middleware and config tests
 ├── test_client.py    # HTTP client tests (mocked)
 ├── test_formatting.py
 └── test_tools.py     # Tool integration tests (mocked)
