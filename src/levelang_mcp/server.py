@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 
 from mcp.server.fastmcp import FastMCP
 
 from .client import LevelangClient
 from .config import get_settings
-from .formatting import format_language_detail, format_language_list, format_translation
+from .formatting import (
+    format_comparison,
+    format_language_detail,
+    format_language_list,
+    format_translation,
+)
 
 
 def _sanitize_text(text: str) -> str:
@@ -117,6 +124,75 @@ async def list_languages() -> str:
         return f"Unexpected error: {e}"
 
 
+@mcp.tool()
+async def translate_compare(
+    text: str,
+    target_language: str,
+    source_language: str = "eng",
+    mood: str = "casual",
+) -> str:
+    """Translate text at all proficiency levels to compare complexity differences.
+
+    Shows how the same text is translated differently at beginner, intermediate,
+    advanced, and fluent levels -- useful for understanding how grammar and
+    vocabulary constraints change across proficiency.
+
+    Args:
+        text: The text to translate (any length, any source language)
+        target_language: Target language code -- use list_languages to see
+            available codes (e.g. fra, deu, cmn, yue, ita)
+        source_language: Source language code (default: eng for English)
+        mood: Tone -- tones available for the target language
+
+    Returns:
+        The same text translated at each available level, formatted for comparison.
+    """
+    sanitized = _sanitize_text(text)
+
+    # Fetch available levels for this language
+    try:
+        lang_config = await levelang.get_language(target_language)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return f"Language '{target_language}' not found. Use list_languages to see available codes."
+        return f"Backend error (HTTP {e.response.status_code}): {e.response.text}"
+    except httpx.ConnectError:
+        return "Cannot reach the Levelang backend. Check that the service is running."
+    except httpx.TimeoutException:
+        return "Request timed out while fetching language details."
+    except Exception as e:
+        return f"Unexpected error: {e}"
+
+    levels = lang_config.get("levels", [])
+    if not levels:
+        return f"No proficiency levels configured for '{target_language}'."
+
+    level_codes = [lv.get("code", "") for lv in levels if lv.get("code")]
+
+    # Translate at all levels concurrently
+    async def _translate_at_level(level: str) -> dict:
+        try:
+            result = await levelang.translate(
+                text=sanitized,
+                source_language_code=source_language,
+                target_language_code=target_language,
+                level=level,
+                mood=mood,
+            )
+            return {"level": level, "ok": True, "result": result}
+        except Exception as e:
+            return {"level": level, "ok": False, "error": str(e)}
+
+    results = await asyncio.gather(*[_translate_at_level(lv) for lv in level_codes])
+
+    return format_comparison(
+        text=sanitized,
+        language_name=lang_config.get("name", target_language),
+        mood=mood,
+        results=list(results),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Resources
 # ---------------------------------------------------------------------------
@@ -144,3 +220,23 @@ async def language_detail_resource(language_code: str) -> str:
         return f"Error fetching language details: {e.response.text}"
     except Exception:
         return f"Unable to fetch details for language '{language_code}'."
+
+
+# ---------------------------------------------------------------------------
+# Prompts
+# ---------------------------------------------------------------------------
+
+
+@mcp.prompt()
+def compare_levels(language: str = "French") -> str:
+    """Create a prompt for comparing how the same text is translated at different levels.
+
+    Args:
+        language: Target language name
+    """
+    return f"""The user will provide a sentence or short text.
+Please translate it into {language} at each available level
+(beginner, intermediate, advanced) using the translate tool.
+
+After all translations, provide a brief analysis of what grammatical
+features change between levels and why."""

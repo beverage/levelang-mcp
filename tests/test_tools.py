@@ -180,3 +180,158 @@ class TestListLanguagesTool:
 
         result = await list_languages()
         assert "Cannot reach" in result
+
+
+class TestTranslateCompareTool:
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_returns_all_levels(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                    {"code": "intermediate", "display_name": "Intermediate"},
+                    {"code": "advanced", "display_name": "Advanced"},
+                ],
+                "moods": [{"code": "casual", "display_name": "Casual"}],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            side_effect=[
+                {
+                    "translation": "Bonjour",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 800},
+                },
+                {
+                    "translation": "Bonjour, comment allez-vous",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 900},
+                },
+                {
+                    "translation": "Bonjour, comment vous portez-vous aujourd'hui",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 1000},
+                },
+            ]
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "Beginner" in result
+        assert "Intermediate" in result
+        assert "Advanced" in result
+        assert "Bonjour" in result
+        assert mock_client.translate.call_count == 3
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_unknown_language(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            side_effect=httpx.HTTPStatusError(
+                "Not Found",
+                request=httpx.Request("GET", "http://test/languages/xxx"),
+                response=httpx.Response(404),
+            )
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "xxx")
+        assert "not found" in result.lower()
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_partial_failure(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                    {"code": "advanced", "display_name": "Advanced"},
+                ],
+                "moods": [],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            side_effect=[
+                {"translation": "Bonjour", "transliteration": None, "metadata": {}},
+                Exception("Provider timeout"),
+            ]
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "Beginner" in result
+        assert "Bonjour" in result
+        assert "Advanced" in result
+        assert "Error" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_connection_error(self, mock_client):
+        mock_client.get_language = AsyncMock(side_effect=httpx.ConnectError("refused"))
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "Cannot reach" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_timeout(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            side_effect=httpx.TimeoutException("timeout")
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "timed out" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_generic_http_error(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            side_effect=httpx.HTTPStatusError(
+                "Server Error",
+                request=httpx.Request("GET", "http://test/languages/fra"),
+                response=httpx.Response(500, text="Internal Server Error"),
+            )
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "Backend error (HTTP 500)" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_empty_levels(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [],
+                "moods": [],
+            }
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        assert "No proficiency levels" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_sanitizes_input(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [{"code": "beginner", "display_name": "Beginner"}],
+                "moods": [],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            return_value={
+                "translation": "Bonjour",
+                "transliteration": None,
+                "metadata": {},
+            }
+        )
+        from levelang_mcp.server import translate_compare
+
+        await translate_compare("  Hello  ", "fra")
+        call_kwargs = mock_client.translate.call_args.kwargs
+        assert call_kwargs["text"] == "Hello"

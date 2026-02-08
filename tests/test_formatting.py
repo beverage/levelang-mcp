@@ -10,6 +10,7 @@ from sample_data import (
 )
 
 from levelang_mcp.formatting import (
+    format_comparison,
     format_language_detail,
     format_language_list,
     format_translation,
@@ -107,3 +108,107 @@ class TestFormatLanguageDetail:
     def test_can_be_used_as(self):
         result = format_language_detail(SAMPLE_SINGLE_LANGUAGE)
         assert "Can be used as: target" in result
+
+
+class TestFormatComparison:
+    def test_basic_comparison(self):
+        results = [
+            {
+                "level": "beginner",
+                "ok": True,
+                "result": {
+                    "translation": "Bonjour",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 800},
+                },
+            },
+            {
+                "level": "advanced",
+                "ok": True,
+                "result": {
+                    "translation": "Bonjour, comment allez-vous",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 1000},
+                },
+            },
+        ]
+        result = format_comparison("Hello", "French", "casual", results)
+        assert 'Comparing translations of: "Hello"' in result
+        assert "French" in result
+        assert "── Beginner ──" in result
+        assert "── Advanced ──" in result
+        assert "Bonjour" in result
+
+    def test_comparison_with_error(self):
+        results = [
+            {
+                "level": "beginner",
+                "ok": True,
+                "result": {
+                    "translation": "Bonjour",
+                    "transliteration": None,
+                    "metadata": {},
+                },
+            },
+            {
+                "level": "advanced",
+                "ok": False,
+                "error": "Provider timeout",
+            },
+        ]
+        result = format_comparison("Hello", "French", "casual", results)
+        assert "Bonjour" in result
+        assert "Error: Provider timeout" in result
+
+    def test_comparison_with_transliteration(self):
+        results = [
+            {
+                "level": "beginner",
+                "ok": True,
+                "result": {
+                    "translation": "你好",
+                    "transliteration": "nǐ hǎo",
+                    "metadata": {"processing_time_ms": 500},
+                },
+            },
+        ]
+        result = format_comparison("Hello", "Mandarin Chinese", "casual", results)
+        assert "nǐ hǎo" in result
+
+    def test_empty_results(self):
+        result = format_comparison("Hello", "French", "casual", [])
+        assert 'Comparing translations of: "Hello"' in result
+        assert "French" in result
+
+    def test_mood_capitalized_in_header(self):
+        result = format_comparison("Hello", "French", "formal", [])
+        assert "Mood: Formal" in result
+
+    def test_processing_time_displayed(self):
+        results = [
+            {
+                "level": "beginner",
+                "ok": True,
+                "result": {
+                    "translation": "Bonjour",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 1234},
+                },
+            },
+        ]
+        result = format_comparison("Hello", "French", "casual", results)
+        assert "(1234ms)" in result
+
+    def test_no_translation_fallback(self):
+        results = [
+            {
+                "level": "beginner",
+                "ok": True,
+                "result": {
+                    "transliteration": None,
+                    "metadata": {},
+                },
+            },
+        ]
+        result = format_comparison("Hello", "French", "casual", results)
+        assert "(no translation)" in result

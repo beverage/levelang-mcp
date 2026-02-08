@@ -167,3 +167,50 @@ def format_language_detail(language: dict[str, Any]) -> str:
         lines.append(f"Can be used as: {', '.join(roles)}")
 
     return "\n".join(lines)
+
+
+def format_comparison(
+    text: str,
+    language_name: str,
+    mood: str,
+    results: list[dict[str, Any]],
+) -> str:
+    """Format a side-by-side comparison of translations at all proficiency levels.
+
+    Args:
+        text: The original source text.
+        language_name: Human-readable language name (e.g. "French").
+        mood: The mood used for all translations.
+        results: List of dicts with keys:
+            - level: str (level code)
+            - ok: bool
+            - result: dict (translation response, if ok)
+            - error: str (error message, if not ok)
+    """
+    lines: list[str] = [
+        f'Comparing translations of: "{text}"',
+        f"Language: {language_name} | Mood: {mood.capitalize()}",
+        "",
+    ]
+
+    for entry in results:
+        level = entry["level"].capitalize()
+        lines.append(f"── {level} ──")
+
+        if not entry["ok"]:
+            lines.append(f"  Error: {entry['error']}")
+        else:
+            result = entry["result"]
+            lines.append(result.get("translation", "(no translation)"))
+
+            if result.get("transliteration"):
+                lines.append(f"  Transliteration: {result['transliteration']}")
+
+            metadata = result.get("metadata", {})
+            processing_time = metadata.get("processing_time_ms")
+            if processing_time is not None:
+                lines.append(f"  ({processing_time:.0f}ms)")
+
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
