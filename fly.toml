@@ -1,0 +1,35 @@
+# fly.toml app configuration file generated for levelang-mcp-staging on 2026-02-08T15:45:19+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'levelang-mcp-staging'
+primary_region = 'cdg'
+
+[build]
+
+[env]
+  LEVELANG_API_BASE_URL = 'https://levelang-backend-staging.fly.dev/api/v1'
+  LOG_FORMAT = 'json'
+  LOG_LEVEL = 'INFO'
+  MCP_HOST = '0.0.0.0'
+  MCP_PORT = '8080'
+  MCP_TRANSPORT = 'streamable-http'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

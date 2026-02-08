@@ -33,6 +33,7 @@ class Settings:
     api_base_url: str
     api_key: str | None
     mcp_transport: str
+    mcp_host: str
     mcp_port: int
     mcp_api_keys: frozenset[str]
     log_level: str
@@ -55,6 +56,7 @@ def get_settings() -> Settings:
         ),
         api_key=os.environ.get("LEVELANG_API_KEY"),
         mcp_transport=os.environ.get("MCP_TRANSPORT", "stdio"),
+        mcp_host=os.environ.get("MCP_HOST", "127.0.0.1"),
         mcp_port=int(os.environ.get("MCP_PORT", "8463")),
         mcp_api_keys=_parse_api_keys(os.environ.get("MCP_API_KEYS")),
         log_level=os.environ.get("LOG_LEVEL", "INFO"),

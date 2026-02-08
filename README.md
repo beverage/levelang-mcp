@@ -20,12 +20,23 @@ An [MCP](https://modelcontextprotocol.io/) server that exposes the [levelang.app
 
 ## Quick Start
 
-**Prerequisites**: Python 3.12+, [uv](https://docs.astral.sh/uv/), a running [Levelang backend](https://github.com/beverage/levelang-backend) (local or remote)
+You need two things: the **MCP server URL** and an **API key**. No local setup required.
 
-```bash
-git clone https://github.com/beverage/levelang-mcp.git
-cd levelang-mcp
-uv sync
+### Cursor
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "levelang": {
+      "url": "https://your-mcp-server-url/mcp",
+      "headers": {
+        "Authorization": "Bearer your-api-key"
+      }
+    }
+  }
+}
 ```
 
 ### Claude Desktop
@@ -36,15 +47,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 {
   "mcpServers": {
     "levelang": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory", "/absolute/path/to/levelang-mcp",
-        "python", "-m", "levelang_mcp"
-      ],
-      "env": {
-        "LEVELANG_API_BASE_URL": "http://localhost:8000/api/v1",
-        "LEVELANG_API_KEY": "sk_your_service_key_here"
+      "url": "https://your-mcp-server-url/mcp",
+      "headers": {
+        "Authorization": "Bearer your-api-key"
       }
     }
   }
@@ -52,8 +57,6 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 ```
 
 Restart Claude Desktop. A hammer icon in the chat input indicates MCP tools are available.
-
-The same configuration works for **Cursor** (`.cursor/mcp.json`) and **Claude Code**.
 
 ### Example Usage
 
@@ -65,9 +68,11 @@ Once connected, ask your AI assistant things like:
 
 > Compare how "I'm worried the new rules might prevent us from finishing on time" translates into German at beginner vs advanced level.
 
-## Configuration
+## Server Configuration
 
-All configuration is through environment variables, set in the `env` block of your MCP client config.
+The settings below are for **running the MCP server** (local development or self-hosting). End users connecting via URL do not need these.
+
+All configuration is through environment variables. When running locally via stdio, these go in the `env` block of your MCP client config.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -81,54 +86,33 @@ All configuration is through environment variables, set in the `env` block of yo
 
 `MCP_API_KEYS` controls client authentication for the HTTP transport. When set, clients must send `Authorization: Bearer <key>` with a key from this list. When empty or unset, auth is disabled (open access). This has no effect on stdio transport.
 
-> **Note:** This is a simple static-key scheme suited to small-scale and internal use. For higher-scale needs (many users, per-key revocation, usage tracking), swap in database-backed keys or an auth provider — the middleware pattern and client config remain the same.
+### Local stdio Connection
 
-**Local development** (no auth):
-```json
-"env": { "LEVELANG_API_BASE_URL": "http://localhost:8000/api/v1" }
+For local development you can run the MCP server as a subprocess instead of connecting via URL. This requires Python 3.12+, [uv](https://docs.astral.sh/uv/), and a running [Levelang backend](https://github.com/beverage/levelang-backend).
+
+```bash
+git clone https://github.com/beverage/levelang-mcp.git
+cd levelang-mcp
+uv sync
 ```
 
-**Staging** (requires service key):
-```json
-"env": {
-  "LEVELANG_API_BASE_URL": "",
-  "LEVELANG_API_KEY": ""
-}
-```
-
-### Remote HTTP Connection
-
-When the MCP server is running in `streamable-http` mode (locally or deployed), connect via URL instead of spawning a subprocess.
-
-**Cursor** (`.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
     "levelang": {
-      "url": "http://localhost:8463/mcp",
-      "headers": {
-        "Authorization": "Bearer your-api-key"
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory", "/absolute/path/to/levelang-mcp",
+        "python", "-m", "levelang_mcp"
+      ],
+      "env": {
+        "LEVELANG_API_BASE_URL": "http://localhost:8000/api/v1"
       }
     }
   }
 }
 ```
-
-**Claude Desktop** (`claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "levelang": {
-      "url": "http://localhost:8463/mcp",
-      "headers": {
-        "Authorization": "Bearer your-api-key"
-      }
-    }
-  }
-}
-```
-
-Omit the `headers` block if `MCP_API_KEYS` is not set on the server (auth disabled).
 
 ## Development
 

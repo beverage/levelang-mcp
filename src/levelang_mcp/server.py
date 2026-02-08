@@ -36,6 +36,7 @@ mcp = FastMCP(
     instructions="AI-powered translation at learner-appropriate proficiency levels. "
     "Use the translate tool to translate text at a specific proficiency level, "
     "and list_languages to discover available languages, levels, and moods.",
+    host=settings.mcp_host,
     port=settings.mcp_port,
 )
 
