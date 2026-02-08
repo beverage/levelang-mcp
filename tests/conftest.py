@@ -23,3 +23,8 @@ def _set_default_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("LEVELANG_API_KEY", raising=False)
     # No MCP_API_KEYS by default (auth disabled in tests unless explicitly set)
     monkeypatch.delenv("MCP_API_KEYS", raising=False)
+    # Default to stdio transport so tests never try to bind a port.
+    monkeypatch.setenv("MCP_TRANSPORT", "stdio")
+    # Logging defaults for tests.
+    monkeypatch.setenv("LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("LOG_FORMAT", "text")

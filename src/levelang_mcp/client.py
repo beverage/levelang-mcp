@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 import httpx
 
@@ -13,6 +13,10 @@ class LevelangClient:
     """Async HTTP client wrapping the Levelang backend API.
 
     Uses a shared httpx.AsyncClient for connection reuse across requests.
+    Supports async context manager protocol for clean shutdown::
+
+        async with LevelangClient() as client:
+            result = await client.translate(...)
     """
 
     def __init__(self) -> None:
@@ -20,6 +24,12 @@ class LevelangClient:
         self.base_url = settings.api_base_url
         self._api_key = settings.api_key
         self._client = httpx.AsyncClient(timeout=30.0)
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        await self.close()
 
     def _headers(self) -> dict[str, str]:
         """Build request headers, conditionally including auth."""

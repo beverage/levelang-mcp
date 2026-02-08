@@ -35,6 +35,8 @@ class Settings:
     mcp_transport: str
     mcp_port: int
     mcp_api_keys: frozenset[str]
+    log_level: str
+    log_format: str
 
 
 _settings: Settings | None = None
@@ -55,6 +57,8 @@ def get_settings() -> Settings:
         mcp_transport=os.environ.get("MCP_TRANSPORT", "stdio"),
         mcp_port=int(os.environ.get("MCP_PORT", "8463")),
         mcp_api_keys=_parse_api_keys(os.environ.get("MCP_API_KEYS")),
+        log_level=os.environ.get("LOG_LEVEL", "INFO"),
+        log_format=os.environ.get("LOG_FORMAT", "auto"),
     )
     return _settings
 
