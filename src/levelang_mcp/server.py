@@ -131,12 +131,13 @@ async def translate_compare(
     target_language: str,
     source_language: str = "eng",
     mood: str = "casual",
+    levels: list[str] | None = None,
 ) -> str:
-    """Translate text at all proficiency levels to compare complexity differences.
+    """Translate text at multiple proficiency levels to compare complexity differences.
 
-    Shows how the same text is translated differently at beginner, intermediate,
-    advanced, and fluent levels -- useful for understanding how grammar and
-    vocabulary constraints change across proficiency.
+    Shows how the same text is translated differently at different levels --
+    useful for understanding how grammar and vocabulary constraints change
+    across proficiency.
 
     Args:
         text: The text to translate (any length, any source language)
@@ -144,9 +145,12 @@ async def translate_compare(
             available codes (e.g. fra, deu, cmn, yue, ita)
         source_language: Source language code (default: eng for English)
         mood: Tone -- tones available for the target language
+        levels: Optional list of proficiency level codes to compare
+            (e.g. ["beginner", "advanced"]). If omitted, compares all
+            available levels. Use list_languages to see valid codes per language.
 
     Returns:
-        The same text translated at each available level, formatted for comparison.
+        The same text translated at each requested level, formatted for comparison.
     """
     sanitized = _sanitize_text(text)
 
@@ -164,13 +168,24 @@ async def translate_compare(
     except Exception as e:
         return f"Unexpected error: {e}"
 
-    levels = lang_config.get("levels", [])
-    if not levels:
+    available_levels = lang_config.get("levels", [])
+    if not available_levels:
         return f"No proficiency levels configured for '{target_language}'."
 
-    level_codes = [lv.get("code", "") for lv in levels if lv.get("code")]
+    available_codes = [lv.get("code", "") for lv in available_levels if lv.get("code")]
 
-    # Translate at all levels concurrently
+    if levels is not None:
+        invalid = [lv for lv in levels if lv not in available_codes]
+        if invalid:
+            return (
+                f"Invalid level(s): {', '.join(invalid)}. "
+                f"Available levels for '{target_language}': {', '.join(available_codes)}"
+            )
+        level_codes = levels
+    else:
+        level_codes = available_codes
+
+    # Translate at requested levels concurrently
     async def _translate_at_level(level: str) -> dict:
         try:
             result = await levelang.translate(
@@ -236,8 +251,9 @@ def compare_levels(language: str = "French") -> str:
         language: Target language name
     """
     return f"""The user will provide a sentence or short text.
-Please translate it into {language} at each available level
-(beginner, intermediate, advanced) using the translate tool.
+Please translate it into {language} at all available levels using the
+translate_compare tool. If the user specifies particular levels to compare,
+pass them via the levels parameter; otherwise omit it to compare all levels.
 
 After all translations, provide a brief analysis of what grammatical
 features change between levels and why."""

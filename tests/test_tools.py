@@ -335,3 +335,96 @@ class TestTranslateCompareTool:
         await translate_compare("  Hello  ", "fra")
         call_kwargs = mock_client.translate.call_args.kwargs
         assert call_kwargs["text"] == "Hello"
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_subset_of_levels(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                    {"code": "intermediate", "display_name": "Intermediate"},
+                    {"code": "advanced", "display_name": "Advanced"},
+                    {"code": "fluent", "display_name": "Fluent"},
+                ],
+                "moods": [{"code": "casual", "display_name": "Casual"}],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            side_effect=[
+                {
+                    "translation": "Bonjour",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 800},
+                },
+                {
+                    "translation": "Bonjour, comment vous portez-vous aujourd'hui",
+                    "transliteration": None,
+                    "metadata": {"processing_time_ms": 1000},
+                },
+            ]
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare(
+            "Hello", "fra", levels=["beginner", "advanced"]
+        )
+        assert "Beginner" in result
+        assert "Advanced" in result
+        assert "Intermediate" not in result
+        assert "Fluent" not in result
+        assert mock_client.translate.call_count == 2
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_invalid_levels(self, mock_client):
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                    {"code": "intermediate", "display_name": "Intermediate"},
+                    {"code": "advanced", "display_name": "Advanced"},
+                ],
+                "moods": [],
+            }
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra", levels=["beginner", "HSK1"])
+        assert "Invalid level(s): HSK1" in result
+        assert "beginner" in result
+        assert "intermediate" in result
+        assert "advanced" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_none_levels_compares_all(self, mock_client):
+        """Passing levels=None (the default) should compare all available levels."""
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                    {"code": "advanced", "display_name": "Advanced"},
+                ],
+                "moods": [],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            side_effect=[
+                {"translation": "Bonjour", "transliteration": None, "metadata": {}},
+                {
+                    "translation": "Bonjour, comment allez-vous",
+                    "transliteration": None,
+                    "metadata": {},
+                },
+            ]
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra", levels=None)
+        assert "Beginner" in result
+        assert "Advanced" in result
+        assert mock_client.translate.call_count == 2
