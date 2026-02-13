@@ -46,6 +46,23 @@ class TestFormatTranslation:
         result = format_translation(response)
         assert "Transcription: Hello world" in result
 
+    def test_mode_included_when_present(self):
+        result = format_translation(SAMPLE_TRANSLATION_RESPONSE)
+        assert "Mode: Written" in result
+
+    def test_mode_omitted_when_absent(self):
+        response = {
+            "translation": "Bonjour",
+            "transliteration": None,
+            "transcription": None,
+            "metadata": {
+                "level": "A2",
+                "mood": "Casual",
+            },
+        }
+        result = format_translation(response)
+        assert "Mode:" not in result
+
     def test_minimal_metadata(self):
         response = {
             "translation": "Bonjour",
@@ -71,13 +88,15 @@ class TestFormatLanguageList:
         result = format_language_list(SAMPLE_LANGUAGES_RESPONSE)
         assert "Casual, Polite, Formal" in result
 
-    def test_shows_transliteration(self):
+    def test_shows_modes(self):
         result = format_language_list(SAMPLE_LANGUAGES_RESPONSE)
-        # French: No, Mandarin: Yes
-        fra_section = result.split("Mandarin")[0]
-        cmn_section = result.split("Mandarin")[1]
-        assert "Transliteration: No" in fra_section
-        assert "Transliteration: Yes" in cmn_section
+        assert "Modes: Written, Spoken" in result
+
+    def test_omits_modes_when_empty(self):
+        result = format_language_list(SAMPLE_LANGUAGES_RESPONSE)
+        # Mandarin has empty modes list -- should not show a Modes line
+        cmn_section = result.split("Mandarin Chinese (cmn)")[1]
+        assert "Modes:" not in cmn_section
 
     def test_empty_languages(self):
         result = format_language_list({"languages": [], "total_count": 0})
@@ -101,9 +120,18 @@ class TestFormatLanguageDetail:
         # Formal should NOT have default marker
         assert "Formal (default)" not in result
 
-    def test_transliteration_shown(self):
+    def test_modes_with_default_marker(self):
         result = format_language_detail(SAMPLE_SINGLE_LANGUAGE)
-        assert "Transliteration: No" in result
+        assert (
+            "Written (default): Standard written French as taught in textbooks"
+            in result
+        )
+        assert (
+            "Spoken: How native French speakers actually talk in everyday conversation"
+            in result
+        )
+        # Spoken should NOT have default marker
+        assert "Spoken (default)" not in result
 
     def test_can_be_used_as(self):
         result = format_language_detail(SAMPLE_SINGLE_LANGUAGE)
@@ -198,6 +226,18 @@ class TestFormatComparison:
         ]
         result = format_comparison("Hello", "French", "casual", results)
         assert "(1234ms)" in result
+
+    def test_mode_shown_in_header_when_spoken(self):
+        result = format_comparison("Hello", "French", "casual", [], mode="spoken")
+        assert "Mode: Spoken" in result
+
+    def test_mode_hidden_in_header_when_written(self):
+        result = format_comparison("Hello", "French", "casual", [], mode="written")
+        assert "Mode:" not in result
+
+    def test_mode_hidden_in_header_when_none(self):
+        result = format_comparison("Hello", "French", "casual", [], mode=None)
+        assert "Mode:" not in result
 
     def test_no_translation_fallback(self):
         results = [

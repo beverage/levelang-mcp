@@ -48,6 +48,9 @@ def format_translation(response: dict[str, Any]) -> str:
         if metadata.get("mood"):
             lines.append(f"Mood: {metadata['mood']}")
 
+        if metadata.get("mode"):
+            lines.append(f"Mode: {metadata['mode']}")
+
         provider = metadata.get("provider", "")
         model = metadata.get("model", "")
         if provider and model:
@@ -101,9 +104,11 @@ def format_language_list(response: dict[str, Any]) -> str:
             mood_names = [m.get("display_name", m.get("code", "")) for m in moods]
             lines.append(f"  Moods: {', '.join(mood_names)}")
 
-        # Transliteration
-        supports_translit = lang.get("supports_transliteration", False)
-        lines.append(f"  Transliteration: {'Yes' if supports_translit else 'No'}")
+        # Modes
+        modes = lang.get("modes", [])
+        if modes:
+            mode_names = [m.get("display_name", m.get("code", "")) for m in modes]
+            lines.append(f"  Modes: {', '.join(mode_names)}")
 
         # Source/target
         roles: list[str] = []
@@ -153,9 +158,19 @@ def format_language_detail(language: dict[str, Any]) -> str:
                 lines.append(f"  {name}{default_marker}")
         lines.append("")
 
-    # Transliteration
-    supports_translit = language.get("supports_transliteration", False)
-    lines.append(f"Transliteration: {'Yes' if supports_translit else 'No'}")
+    # Modes with descriptions
+    modes = language.get("modes", [])
+    if modes:
+        lines.append("Modes:")
+        for m in modes:
+            name = m.get("display_name", m.get("code", ""))
+            desc = m.get("description", "")
+            default_marker = " (default)" if m.get("is_default") else ""
+            if desc:
+                lines.append(f"  {name}{default_marker}: {desc}")
+            else:
+                lines.append(f"  {name}{default_marker}")
+        lines.append("")
 
     # Source/target
     roles: list[str] = []
@@ -174,6 +189,7 @@ def format_comparison(
     language_name: str,
     mood: str,
     results: list[dict[str, Any]],
+    mode: str | None = None,
 ) -> str:
     """Format a side-by-side comparison of translations at all proficiency levels.
 
@@ -186,10 +202,16 @@ def format_comparison(
             - ok: bool
             - result: dict (translation response, if ok)
             - error: str (error message, if not ok)
+        mode: The mode used for all translations (e.g. "spoken", "written").
+            Omitted from the header when None or "written".
     """
+    header = f"Language: {language_name} | Mood: {mood.capitalize()}"
+    if mode and mode != "written":
+        header += f" | Mode: {mode.capitalize()}"
+
     lines: list[str] = [
         f'Comparing translations of: "{text}"',
-        f"Language: {language_name} | Mood: {mood.capitalize()}",
+        header,
         "",
     ]
 

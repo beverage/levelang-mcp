@@ -12,6 +12,7 @@ SAMPLE_TRANSLATION_RESPONSE = {
         "level": "A2",
         "level_description": "elementary proficiency",
         "mood": "Casual",
+        "mode": "Written",
         "provider": "gemini",
         "model": "gemini-2.5-flash-lite",
         "temperature": 0.1,
@@ -32,6 +33,7 @@ SAMPLE_TRANSLATION_WITH_TRANSLIT = {
         "level": "HSK1",
         "level_description": "basic vocabulary",
         "mood": "Casual",
+        "mode": "Written",
         "provider": "gemini",
         "model": "gemini-2.5-flash-lite",
         "temperature": 0.1,
@@ -75,6 +77,10 @@ SAMPLE_LANGUAGES_RESPONSE = {
                 {"code": "polite", "display_name": "Polite", "is_default": False},
                 {"code": "formal", "display_name": "Formal", "is_default": False},
             ],
+            "modes": [
+                {"code": "written", "display_name": "Written", "is_default": True},
+                {"code": "spoken", "display_name": "Spoken", "is_default": False},
+            ],
         },
         {
             "code": "cmn",
@@ -97,6 +103,7 @@ SAMPLE_LANGUAGES_RESPONSE = {
             "moods": [
                 {"code": "casual", "display_name": "Casual", "is_default": True},
             ],
+            "modes": [],
         },
     ],
     "total_count": 2,
@@ -132,6 +139,20 @@ SAMPLE_SINGLE_LANGUAGE = {
             "display_name": "Formal",
             "is_default": False,
             "description": "Professional contexts",
+        },
+    ],
+    "modes": [
+        {
+            "code": "written",
+            "display_name": "Written",
+            "is_default": True,
+            "description": "Standard written French as taught in textbooks",
+        },
+        {
+            "code": "spoken",
+            "display_name": "Spoken",
+            "is_default": False,
+            "description": "How native French speakers actually talk in everyday conversation",
         },
     ],
 }

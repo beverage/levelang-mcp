@@ -47,18 +47,22 @@ class LevelangClient:
         target_language_code: str,
         level: str,
         mood: str,
+        mode: str | None = None,
     ) -> dict[str, Any]:
         """Call POST /translate and return the response dict."""
+        body: dict[str, str] = {
+            "text": text,
+            "source_language_code": source_language_code,
+            "target_language_code": target_language_code,
+            "level": level,
+            "mood": mood,
+        }
+        if mode is not None:
+            body["mode"] = mode
         response = await self._client.post(
             f"{self.base_url}/translate",
             headers=self._headers(),
-            json={
-                "text": text,
-                "source_language_code": source_language_code,
-                "target_language_code": target_language_code,
-                "level": level,
-                "mood": mood,
-            },
+            json=body,
         )
         response.raise_for_status()
         result: dict[str, Any] = response.json()

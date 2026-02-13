@@ -35,7 +35,7 @@ mcp = FastMCP(
     "Levelang",
     instructions="AI-powered translation at learner-appropriate proficiency levels. "
     "Use the translate tool to translate text at a specific proficiency level, "
-    "and list_languages to discover available languages, levels, and moods.",
+    "and list_languages to discover available languages, levels, moods, and modes.",
     host=settings.mcp_host,
     port=settings.mcp_port,
 )
@@ -55,6 +55,7 @@ async def translate(
     level: str,
     source_language: str = "eng",
     mood: str = "casual",
+    mode: str = "written",
 ) -> str:
     """Translate text to a target language at a specific proficiency level.
 
@@ -69,6 +70,9 @@ async def translate(
         level: Proficiency level -- proficiency levels available for the target language (e.g. beginner, intermediate, advanced, and/or fluent)
         source_language: Source language code (default: eng for English)
         mood: Tone -- tones available for the target language
+        mode: Language mode (spoken/written) -- controls whether the
+            translation targets written or spoken register. Use
+            list_languages to see available modes per language.
 
     Returns:
         The translated text with metadata about the translation.
@@ -80,6 +84,7 @@ async def translate(
             target_language_code=target_language,
             level=level,
             mood=mood,
+            mode=mode,
         )
         return format_translation(result)
     except httpx.HTTPStatusError as e:
@@ -104,8 +109,8 @@ async def translate(
 async def list_languages() -> str:
     """List all languages supported by Levelang with their available levels and moods.
 
-    Use this to discover valid language codes, proficiency levels, and mood
-    options before calling the translate tool.
+    Use this to discover valid language codes, proficiency levels, mood
+    options, and mode options before calling the translate tool.
 
     Returns:
         Formatted list of supported languages and their configurations.
@@ -132,6 +137,7 @@ async def translate_compare(
     source_language: str = "eng",
     mood: str = "casual",
     levels: list[str] | None = None,
+    mode: str | None = None,
 ) -> str:
     """Translate text at multiple proficiency levels to compare complexity differences.
 
@@ -148,6 +154,9 @@ async def translate_compare(
         levels: Optional list of proficiency level codes to compare
             (e.g. ["beginner", "advanced"]). If omitted, compares all
             available levels. Use list_languages to see valid codes per language.
+        mode: Optional language mode (spoken/written) -- controls whether the
+            translation targets written or spoken register. If omitted, compares
+            all available levels. Use list_languages to see valid codes per language.
 
     Returns:
         The same text translated at each requested level, formatted for comparison.
@@ -194,6 +203,7 @@ async def translate_compare(
                 target_language_code=target_language,
                 level=level,
                 mood=mood,
+                mode=mode,
             )
             return {"level": level, "ok": True, "result": result}
         except Exception as e:
@@ -206,6 +216,7 @@ async def translate_compare(
         language_name=lang_config.get("name", target_language),
         mood=mood,
         results=list(results),
+        mode=mode,
     )
 
 
@@ -254,6 +265,8 @@ def compare_levels(language: str = "French") -> str:
 Please translate it into {language} at all available levels using the
 translate_compare tool. If the user specifies particular levels to compare,
 pass them via the levels parameter; otherwise omit it to compare all levels.
+If the user specifies a mode (spoken or written), pass it via the mode
+parameter; otherwise omit it to use the default (written).
 
 After all translations, provide a brief analysis of what grammatical
 features change between levels and why."""

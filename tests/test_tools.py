@@ -71,6 +71,7 @@ class TestTranslateTool:
             level="advanced",
             source_language="eng",
             mood="formal",
+            mode="spoken",
         )
         mock_client.translate.assert_called_once_with(
             text="Hello",
@@ -78,7 +79,21 @@ class TestTranslateTool:
             target_language_code="deu",
             level="advanced",
             mood="formal",
+            mode="spoken",
         )
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_passes_default_mode(self, mock_client):
+        mock_client.translate = AsyncMock(return_value=SAMPLE_TRANSLATION_RESPONSE)
+        from levelang_mcp.server import translate
+
+        await translate(
+            text="Hello",
+            target_language="fra",
+            level="beginner",
+        )
+        call_kwargs = mock_client.translate.call_args.kwargs
+        assert call_kwargs["mode"] == "written"
 
     @patch("levelang_mcp.server.levelang")
     async def test_translate_strips_whitespace_but_preserves_newlines(
@@ -428,3 +443,58 @@ class TestTranslateCompareTool:
         assert "Beginner" in result
         assert "Advanced" in result
         assert mock_client.translate.call_count == 2
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_passes_mode_through(self, mock_client):
+        """Mode parameter should be passed to each translate call."""
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                ],
+                "moods": [],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            return_value={
+                "translation": "Bonjour",
+                "transliteration": None,
+                "metadata": {},
+            }
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra", mode="spoken")
+        call_kwargs = mock_client.translate.call_args.kwargs
+        assert call_kwargs["mode"] == "spoken"
+        assert "Mode: Spoken" in result
+
+    @patch("levelang_mcp.server.levelang")
+    async def test_translate_compare_without_mode(self, mock_client):
+        """Omitting mode should default to None (backward compat)."""
+        mock_client.get_language = AsyncMock(
+            return_value={
+                "name": "French",
+                "code": "fra",
+                "levels": [
+                    {"code": "beginner", "display_name": "Beginner"},
+                ],
+                "moods": [],
+            }
+        )
+        mock_client.translate = AsyncMock(
+            return_value={
+                "translation": "Bonjour",
+                "transliteration": None,
+                "metadata": {},
+            }
+        )
+        from levelang_mcp.server import translate_compare
+
+        result = await translate_compare("Hello", "fra")
+        call_kwargs = mock_client.translate.call_args.kwargs
+        assert call_kwargs["mode"] is None
+        # Mode should not appear in header when None
+        assert "Mode:" not in result

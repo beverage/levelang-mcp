@@ -71,6 +71,39 @@ class TestTranslate:
         assert body["mood"] == "formal"
 
     @respx.mock
+    async def test_translate_sends_mode_when_provided(self, client: LevelangClient):
+        route = respx.post(f"{BASE_URL}/translate").mock(
+            return_value=httpx.Response(200, json=SAMPLE_TRANSLATION_RESPONSE)
+        )
+        await client.translate(
+            text="Test",
+            source_language_code="eng",
+            target_language_code="fra",
+            level="beginner",
+            mood="casual",
+            mode="spoken",
+        )
+        request = route.calls[0].request
+        body = json.loads(request.content)
+        assert body["mode"] == "spoken"
+
+    @respx.mock
+    async def test_translate_omits_mode_when_none(self, client: LevelangClient):
+        route = respx.post(f"{BASE_URL}/translate").mock(
+            return_value=httpx.Response(200, json=SAMPLE_TRANSLATION_RESPONSE)
+        )
+        await client.translate(
+            text="Test",
+            source_language_code="eng",
+            target_language_code="fra",
+            level="beginner",
+            mood="casual",
+        )
+        request = route.calls[0].request
+        body = json.loads(request.content)
+        assert "mode" not in body
+
+    @respx.mock
     async def test_translate_422_raises(self, client: LevelangClient):
         respx.post(f"{BASE_URL}/translate").mock(
             return_value=httpx.Response(422, json={"detail": "Invalid language code"})
