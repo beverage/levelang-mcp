@@ -83,19 +83,6 @@ class TestTranslateTool:
         )
 
     @patch("levelang_mcp.server.levelang")
-    async def test_translate_passes_default_mode(self, mock_client):
-        mock_client.translate = AsyncMock(return_value=SAMPLE_TRANSLATION_RESPONSE)
-        from levelang_mcp.server import translate
-
-        await translate(
-            text="Hello",
-            target_language="fra",
-            level="beginner",
-        )
-        call_kwargs = mock_client.translate.call_args.kwargs
-        assert call_kwargs["mode"] == "written"
-
-    @patch("levelang_mcp.server.levelang")
     async def test_translate_strips_whitespace_but_preserves_newlines(
         self, mock_client
     ):

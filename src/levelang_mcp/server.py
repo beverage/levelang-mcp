@@ -55,7 +55,7 @@ async def translate(
     level: str,
     source_language: str = "eng",
     mood: str = "casual",
-    mode: str = "written",
+    mode: str | None = None,
 ) -> str:
     """Translate text to a target language at a specific proficiency level.
 
@@ -266,7 +266,7 @@ Please translate it into {language} at all available levels using the
 translate_compare tool. If the user specifies particular levels to compare,
 pass them via the levels parameter; otherwise omit it to compare all levels.
 If the user specifies a mode (spoken or written), pass it via the mode
-parameter; otherwise omit it to use the default (written).
+parameter; otherwise omit it to use the language's default mode.
 
 After all translations, provide a brief analysis of what grammatical
 features change between levels and why."""
