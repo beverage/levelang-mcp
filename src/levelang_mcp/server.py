@@ -33,9 +33,11 @@ settings = get_settings()
 
 mcp = FastMCP(
     "Levelang",
-    instructions="AI-powered translation at learner-appropriate proficiency levels. "
-    "Use the translate tool to translate text at a specific proficiency level, "
-    "and list_languages to discover available languages, levels, moods, and modes.",
+    instructions="Proficiency-calibrated translation service. Translates text at a "
+    "specific proficiency level — controlling vocabulary, grammar, and register so "
+    "the output is usable by someone at that level. Use the translate tool to "
+    "translate and list_languages to discover available languages, levels, moods, "
+    "and modes.",
     host=settings.mcp_host,
     port=settings.mcp_port,
 )
@@ -59,9 +61,10 @@ async def translate(
 ) -> str:
     """Translate text to a target language at a specific proficiency level.
 
-    Unlike standard translators that produce native-speaker complexity,
-    this translates at the learner's level -- beginner translations use
-    simple grammar, intermediate uses more complex structures, etc.
+    Unlike standard translators that always produce native-speaker complexity,
+    this calibrates output to the requested proficiency level -- beginner
+    translations use simple grammar, intermediate uses more complex structures,
+    etc. The result is a translation the user can read, understand, and use.
 
     Args:
         text: The text to translate (any length, any source language)
