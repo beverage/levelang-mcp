@@ -48,6 +48,7 @@ class LevelangClient:
         level: str,
         mood: str,
         mode: str | None = None,
+        model: str | None = None,
     ) -> dict[str, Any]:
         """Call POST /translate and return the response dict."""
         body: dict[str, str] = {
@@ -59,6 +60,8 @@ class LevelangClient:
         }
         if mode is not None:
             body["mode"] = mode
+        if model is not None:
+            body["model"] = model
         response = await self._client.post(
             f"{self.base_url}/translate",
             headers=self._headers(),

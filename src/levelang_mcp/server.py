@@ -58,6 +58,7 @@ async def translate(
     source_language: str = "eng",
     mood: str = "casual",
     mode: str | None = None,
+    model: str | None = None,
 ) -> str:
     """Translate text to a target language at a specific proficiency level.
 
@@ -76,6 +77,9 @@ async def translate(
         mode: Language mode (spoken/written) -- controls whether the
             translation targets written or spoken register. Use
             list_languages to see available modes per language.
+        model: LLM model to use for translation (e.g. gemini-2.5-flash,
+            mistral-small-2603, gpt-4.1-nano). If omitted, uses the
+            system default model.
 
     Returns:
         The translated text with metadata about the translation.
@@ -88,6 +92,7 @@ async def translate(
             level=level,
             mood=mood,
             mode=mode,
+            model=model,
         )
         return format_translation(result)
     except httpx.HTTPStatusError as e:
@@ -141,6 +146,7 @@ async def translate_compare(
     mood: str = "casual",
     levels: list[str] | None = None,
     mode: str | None = None,
+    model: str | None = None,
 ) -> str:
     """Translate text at multiple proficiency levels to compare complexity differences.
 
@@ -160,6 +166,9 @@ async def translate_compare(
         mode: Optional language mode (spoken/written) -- controls whether the
             translation targets written or spoken register. If omitted, compares
             all available levels. Use list_languages to see valid codes per language.
+        model: LLM model to use for translation (e.g. gemini-2.5-flash,
+            mistral-small-2603, gpt-4.1-nano). If omitted, uses the
+            system default model.
 
     Returns:
         The same text translated at each requested level, formatted for comparison.
@@ -207,6 +216,7 @@ async def translate_compare(
                 level=level,
                 mood=mood,
                 mode=mode,
+                model=model,
             )
             return {"level": level, "ok": True, "result": result}
         except Exception as e:

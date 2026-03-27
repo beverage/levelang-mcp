@@ -80,6 +80,7 @@ class TestTranslateTool:
             level="advanced",
             mood="formal",
             mode="spoken",
+            model=None,
         )
 
     @patch("levelang_mcp.server.levelang")
