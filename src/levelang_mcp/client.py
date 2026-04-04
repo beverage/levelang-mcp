@@ -24,12 +24,18 @@ class LevelangClient:
         self.base_url = settings.api_base_url
         self._api_key = settings.api_key
         self._client = httpx.AsyncClient(
-            timeout=30.0,
+            timeout=httpx.Timeout(
+                connect=5.0,
+                read=30.0,
+                write=10.0,
+                pool=5.0,
+            ),
             limits=httpx.Limits(
                 max_connections=10,
                 max_keepalive_connections=2,
-                keepalive_expiry=30,
+                keepalive_expiry=5,
             ),
+            transport=httpx.AsyncHTTPTransport(retries=1),
         )
 
     async def __aenter__(self) -> Self:
