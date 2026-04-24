@@ -56,21 +56,22 @@ class LevelangClient:
     async def translate(
         self,
         text: str,
-        source_language_code: str,
         target_language_code: str,
         level: str,
         mood: str,
+        source_language_code: str | None = None,
         mode: str | None = None,
         model: str | None = None,
     ) -> dict[str, Any]:
         """Call POST /translate and return the response dict."""
         body: dict[str, str] = {
             "text": text,
-            "source_language_code": source_language_code,
             "target_language_code": target_language_code,
             "level": level,
             "mood": mood,
         }
+        if source_language_code is not None:
+            body["source_language_code"] = source_language_code
         if mode is not None:
             body["mode"] = mode
         if model is not None:

@@ -104,12 +104,33 @@ class TestTranslate:
         assert "mode" not in body
 
     @respx.mock
+    async def test_translate_omits_source_when_none(self, client: LevelangClient):
+        route = respx.post(f"{BASE_URL}/translate").mock(
+            return_value=httpx.Response(200, json=SAMPLE_TRANSLATION_RESPONSE)
+        )
+        await client.translate(
+            text="Test",
+            target_language_code="fra",
+            level="beginner",
+            mood="casual",
+        )
+        request = route.calls[0].request
+        body = json.loads(request.content)
+        assert "source_language_code" not in body
+
+    @respx.mock
     async def test_translate_422_raises(self, client: LevelangClient):
         respx.post(f"{BASE_URL}/translate").mock(
             return_value=httpx.Response(422, json={"detail": "Invalid language code"})
         )
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await client.translate("Hi", "eng", "xxx", "beginner", "casual")
+            await client.translate(
+                text="Hi",
+                target_language_code="xxx",
+                level="beginner",
+                mood="casual",
+                source_language_code="eng",
+            )
         assert exc_info.value.response.status_code == 422
 
     @respx.mock
@@ -118,7 +139,13 @@ class TestTranslate:
             return_value=httpx.Response(500, text="Internal Server Error")
         )
         with pytest.raises(httpx.HTTPStatusError):
-            await client.translate("Hi", "eng", "fra", "beginner", "casual")
+            await client.translate(
+                text="Hi",
+                target_language_code="fra",
+                level="beginner",
+                mood="casual",
+                source_language_code="eng",
+            )
 
 
 class TestGetLanguages:

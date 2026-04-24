@@ -55,7 +55,7 @@ async def translate(
     text: str,
     target_language: str,
     level: str,
-    source_language: str = "eng",
+    source_language: str | None = None,
     mood: str = "casual",
     mode: str | None = None,
     model: str | None = None,
@@ -67,12 +67,17 @@ async def translate(
     translations use simple grammar, intermediate uses more complex structures,
     etc. The result is a translation the user can read, understand, and use.
 
+    Also supports same-language transformation: pass the same target_language
+    as the source (or omit source_language entirely) to rewrite text at a
+    different proficiency level within one language.
+
     Args:
         text: The text to translate (any length, any source language)
         target_language: Target language code -- use list_languages to see
             available codes (e.g. fra, deu, cmn, yue, ita)
         level: Proficiency level -- proficiency levels available for the target language (e.g. beginner, intermediate, advanced, and/or fluent)
-        source_language: Source language code (default: eng for English)
+        source_language: Optional source language code. Omit to let the
+            backend auto-detect (enables same-language transformation).
         mood: Tone -- tones available for the target language
         mode: Language mode (spoken/written) -- controls whether the
             translation targets written or spoken register. Use
@@ -142,7 +147,7 @@ async def list_languages() -> str:
 async def translate_compare(
     text: str,
     target_language: str,
-    source_language: str = "eng",
+    source_language: str | None = None,
     mood: str = "casual",
     levels: list[str] | None = None,
     mode: str | None = None,
@@ -152,13 +157,16 @@ async def translate_compare(
 
     Shows how the same text is translated differently at different levels --
     useful for understanding how grammar and vocabulary constraints change
-    across proficiency.
+    across proficiency. Also supports same-language transformation: pass the
+    same code for target_language and source_language (or omit source_language)
+    to rewrite text at each level within one language.
 
     Args:
         text: The text to translate (any length, any source language)
         target_language: Target language code -- use list_languages to see
             available codes (e.g. fra, deu, cmn, yue, ita)
-        source_language: Source language code (default: eng for English)
+        source_language: Optional source language code. Omit to let the
+            backend auto-detect (enables same-language transformation).
         mood: Tone -- tones available for the target language
         levels: Optional list of proficiency level codes to compare
             (e.g. ["beginner", "advanced"]). If omitted, compares all
