@@ -74,7 +74,7 @@ async def translate(
     Args:
         text: The text to translate (any length, any source language)
         target_language: Target language code -- use list_languages to see
-            available codes (e.g. fra, deu, cmn, yue, ita)
+            available codes (e.g. fra, deu, cmn, yue, ita, jpn)
         level: Proficiency level -- proficiency levels available for the target language (e.g. beginner, intermediate, advanced, and/or fluent)
         source_language: Optional source language code. Omit to let the
             backend auto-detect (enables same-language transformation).
@@ -164,7 +164,7 @@ async def translate_compare(
     Args:
         text: The text to translate (any length, any source language)
         target_language: Target language code -- use list_languages to see
-            available codes (e.g. fra, deu, cmn, yue, ita)
+            available codes (e.g. fra, deu, cmn, yue, ita, jpn)
         source_language: Optional source language code. Omit to let the
             backend auto-detect (enables same-language transformation).
         mood: Tone -- tones available for the target language

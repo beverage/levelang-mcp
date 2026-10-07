@@ -12,8 +12,8 @@ An [MCP](https://modelcontextprotocol.io/) server that exposes the [levelang.app
 ## Features
 
 - **Level-Aware Translation** — Translate text at beginner, intermediate, advanced, or fluent proficiency with grammar constraints enforced per level
-- **Multi-Language Support** — French, German, Italian, Mandarin Chinese, Cantonese, with transliteration where applicable
-- **Mood Control** — Casual, polite, and formal translation styles
+- **Multi-Language Support** — French, German, Italian, Mandarin Chinese, Cantonese, Japanese, with transliteration where applicable
+- **Mood Control** — Casual and formal translation styles, plus honorific (keigo) for Japanese
 - **Language Discovery** — Query available languages, levels, and moods dynamically from the backend
 - **MCP Resources** — `levelang://languages` and `levelang://languages/{code}` for pulling language configs into context
 - **Stateless Wrapper** — No database, no shared state; translates MCP tool calls into backend HTTP requests
