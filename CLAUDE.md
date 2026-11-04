@@ -1,6 +1,6 @@
 # Levelang MCP Server
 
-Stateless MCP server that exposes the Levelang translation API to AI assistants (Claude, Cursor, etc.). Translates MCP tool calls into HTTP requests to the backend.
+Stateless MCP server that exposes the Levelang translation API to AI assistants. Translates MCP tool calls into HTTP requests to the backend. This is the dev-workflow MCP: Claude Code spawns it over stdio via the constellation's `.mcp.json`. End users use `levelang-mcp-app` instead (DEC-021).
 
 ## Tech Stack
 
@@ -28,7 +28,7 @@ src/levelang_mcp/
 
 - `client.py` — Makes HTTP calls to the backend. Must stay in sync with backend API endpoints and response schemas.
 - `formatting.py` — Formats backend JSON into human-readable text for the LLM. Must stay in sync with the backend translate response schema.
-- `server.py` — Defines MCP tools (`translate`, `translate_compare`, `list_languages`) and resources (`levelang://languages`).
+- `server.py` — Defines MCP tools (`translate`, `translate_compare`, `list_languages`), resources (`levelang://languages`, `levelang://languages/{code}`) and the `compare_levels` prompt.
 
 ## Configuration
 
@@ -37,8 +37,11 @@ src/levelang_mcp/
 | `LEVELANG_API_BASE_URL` | `http://localhost:8000/api/v1` | Backend URL |
 | `LEVELANG_API_KEY` | — | Service key (`sk_*`) for backend auth |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
+| `MCP_HOST` | `127.0.0.1` | Bind address for HTTP transport |
 | `MCP_PORT` | `8463` | Port for HTTP transport |
 | `MCP_API_KEYS` | — | Comma-separated client auth keys for HTTP |
+| `LOG_LEVEL` | `INFO` | Log level |
+| `LOG_FORMAT` | `auto` | `auto` (JSON for HTTP, text for stdio), `json` or `text` |
 
 ## Commands
 
